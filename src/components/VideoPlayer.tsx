@@ -1,7 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
+
+import React, { useEffect } from 'react';
+import { useVideoPlayer } from '@/hooks/useVideoPlayer';
+import VideoControls from './VideoControls';
+import { getVideoControllerScript } from '@/utils/videoControl';
 
 interface VideoPlayerProps {
   src: string;
@@ -9,82 +10,20 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const controllerRef = useRef<HTMLDivElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(50);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  const togglePlay = () => {
-    if (iframeRef.current) {
-      try {
-        if (isPlaying) {
-          iframeRef.current.contentWindow?.postMessage(JSON.stringify({ action: 'pause' }), '*');
-        } else {
-          iframeRef.current.contentWindow?.postMessage(JSON.stringify({ action: 'play' }), '*');
-        }
-        setIsPlaying(!isPlaying);
-      } catch (error) {
-        console.error('Error toggling play state:', error);
-      }
-    }
-  };
-
-  const handleVolumeChange = (value: number[]) => {
-    const newVolume = value[0];
-    setVolume(newVolume);
-    if (iframeRef.current) {
-      iframeRef.current.contentWindow?.postMessage(JSON.stringify({ 
-        action: 'setVolume', 
-        value: newVolume / 100 
-      }), '*');
-    }
-    if (newVolume === 0) {
-      setIsMuted(true);
-    } else {
-      setIsMuted(false);
-    }
-  };
-
-  const toggleMute = () => {
-    if (iframeRef.current) {
-      const newMuted = !isMuted;
-      setIsMuted(newMuted);
-      if (newMuted) {
-        setVolume(0);
-        iframeRef.current.contentWindow?.postMessage(JSON.stringify({ 
-          action: 'setVolume', 
-          value: 0 
-        }), '*');
-      } else {
-        setVolume(50);
-        iframeRef.current.contentWindow?.postMessage(JSON.stringify({ 
-          action: 'setVolume', 
-          value: 0.5 
-        }), '*');
-      }
-    }
-  };
-
-  const toggleFullscreen = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false);
-      }).catch(err => {
-        console.log(`Error exiting fullscreen: ${err.message}`);
-      });
-    } else {
-      const container = iframeRef.current?.parentElement;
-      if (container) {
-        container.requestFullscreen().then(() => {
-          setIsFullscreen(true);
-        }).catch(err => {
-          console.log(`Error entering fullscreen: ${err.message}`);
-        });
-      }
-    }
-  };
+  const {
+    iframeRef,
+    isPlaying,
+    volume,
+    isMuted,
+    isFullscreen,
+    setIsPlaying,
+    setVolume,
+    setIsMuted,
+    togglePlay,
+    handleVolumeChange,
+    toggleMute,
+    toggleFullscreen,
+  } = useVideoPlayer();
 
   useEffect(() => {
     const setupPlayer = () => {
@@ -106,11 +45,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [volume]);
+  }, [volume, setIsFullscreen]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -132,9 +70,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
               setVolume(data.value * 100);
               setIsMuted(data.value === 0);
               break;
-            case 'fullscreenChange':
-              setIsFullscreen(data.value);
-              break;
           }
         }
       } catch (error) {
@@ -145,7 +80,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, []);
+  }, [setIsPlaying, setVolume, setIsMuted]);
 
   useEffect(() => {
     const injectControllerScript = () => {
@@ -154,55 +89,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           const iframe = iframeRef.current;
           iframe.onload = () => {
             setTimeout(() => {
-              const script = `
-                window.addEventListener('message', function(event) {
-                  try {
-                    let data = event.data;
-                    if (typeof data === 'string') {
-                      data = JSON.parse(data);
-                    }
-                    
-                    if (data && data.action) {
-                      const videos = document.querySelectorAll('video');
-                      if (videos.length > 0) {
-                        videos.forEach(function(video) {
-                          switch(data.action) {
-                            case 'play':
-                              video.play();
-                              break;
-                            case 'pause':
-                              video.pause();
-                              break;
-                            case 'setVolume':
-                              video.volume = data.value;
-                              break;
-                          }
-                        });
-                      }
-                    }
-                  } catch (e) {
-                    console.error('Error processing message:', e);
-                  }
-                });
-
-                document.querySelectorAll('video').forEach(function(video) {
-                  video.addEventListener('play', function() {
-                    window.parent.postMessage(JSON.stringify({ action: 'playing' }), '*');
-                  });
-                  video.addEventListener('pause', function() {
-                    window.parent.postMessage(JSON.stringify({ action: 'paused' }), '*');
-                  });
-                  video.addEventListener('volumechange', function() {
-                    window.parent.postMessage(JSON.stringify({ 
-                      action: 'volumeChange', 
-                      value: video.volume 
-                    }), '*');
-                  });
-                });
-              `;
-
               iframe.contentWindow?.postMessage(
-                JSON.stringify({ action: 'injectScript', script: script }),
+                JSON.stringify({ 
+                  action: 'injectScript', 
+                  script: getVideoControllerScript() 
+                }),
                 '*'
               );
             }, 1500);
@@ -235,48 +126,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
         )}
       </div>
       <div 
-        ref={controllerRef}
         className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-2 flex flex-col z-50"
       >
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center">
-            <Button
-              onClick={togglePlay}
-              variant="ghost"
-              size="sm"
-              className="text-white hover:text-red-500 transition-colors"
-            >
-              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-            </Button>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={toggleMute}
-              variant="ghost"
-              size="sm"
-              className="text-white hover:text-red-500 transition-colors"
-            >
-              {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
-            </Button>
-            <div className="w-24">
-              <Slider
-                value={[volume]}
-                max={100}
-                step={1}
-                onValueChange={handleVolumeChange}
-                className="w-full"
-              />
-            </div>
-            <Button
-              onClick={toggleFullscreen}
-              variant="ghost"
-              size="sm"
-              className="text-white hover:text-red-500 transition-colors"
-            >
-              {isFullscreen ? <Minimize className="h-6 w-6" /> : <Maximize className="h-6 w-6" />}
-            </Button>
-          </div>
-        </div>
+        <VideoControls
+          isPlaying={isPlaying}
+          volume={volume}
+          isMuted={isMuted}
+          isFullscreen={isFullscreen}
+          onPlayToggle={togglePlay}
+          onVolumeChange={handleVolumeChange}
+          onMuteToggle={toggleMute}
+          onFullscreenToggle={toggleFullscreen}
+        />
       </div>
       <style>{`
         .video-container:fullscreen .controls-container {
