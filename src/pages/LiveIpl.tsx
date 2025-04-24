@@ -66,7 +66,7 @@ const LiveIpl = () => {
     },
     {
       id: 8,
-      name: "टाइम्स नाउ",
+      name: "टाइム्स नाउ",
       logo: "fa-solid fa-tv",
       live: false
     }
@@ -220,29 +220,19 @@ const LiveIpl = () => {
                 </Button>
               </div>
             </div>
-            <Carousel className="w-full">
-              <CarouselContent>
-                {newsItems.map((item) => (
-                  <CarouselItem key={item.id}>
-                    <div className="relative w-full h-full">
-                      <img
-                        src={currentChannelInfo.image}
-                        alt="Live News Broadcast"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute bottom-24 left-0 right-0 bg-red-800 text-white py-2 px-4">
-                        <h2 className="text-xl font-bold">{item.title}</h2>
-                      </div>
-                      <div className="absolute right-4 bottom-28 bg-red-600 text-white p-2 rounded">
-                        <p className="text-xl font-bold">{item.time}</p>
-                      </div>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="left-4" />
-              <CarouselNext className="right-4" />
-            </Carousel>
+            <div className="relative w-full h-full">
+              <iframe 
+                src="//stream.crichd.sc/update/skys2.php" 
+                className="w-full h-[500px]"
+                frameBorder="0"
+                allowFullScreen
+                allow="encrypted-media"
+                sandbox="allow-same-origin allow-scripts allow-presentation"
+              />
+              <div className="absolute bottom-24 left-0 right-0 bg-red-800 text-white py-2 px-4">
+                <h2 className="text-xl font-bold">{currentChannelInfo.breakingNews}</h2>
+              </div>
+            </div>
             <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-2 flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center">
