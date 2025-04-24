@@ -1,8 +1,11 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useVideoPlayer } from '@/hooks/useVideoPlayer';
+import { useScriptInjection } from '@/hooks/useScriptInjection';
+import { useVideoMessageHandler } from '@/hooks/useVideoMessageHandler';
 import VideoControls from './VideoControls';
-import { getVideoControllerScript, sendVideoMessage } from '@/utils/videoControl';
+import BreakingNews from './BreakingNews';
+import { sendVideoMessage } from '@/utils/videoControl';
 
 interface VideoPlayerProps {
   src: string;
@@ -26,13 +29,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     toggleMute,
     toggleFullscreen,
   } = useVideoPlayer();
-  
-  const injectionAttemptCountRef = useRef(0);
+
+  const { injectionAttemptCountRef } = useScriptInjection(iframeRef, scriptInjectedRef);
+
+  useVideoMessageHandler({
+    setIsPlaying,
+    setVolume,
+    setIsMuted,
+    scriptInjectedRef,
+  });
 
   useEffect(() => {
     const setupPlayer = () => {
       if (iframeRef.current) {
-        // Initialize with a delay to ensure the iframe has loaded
         setTimeout(() => {
           try {
             console.log('Initializing video player...');
@@ -57,124 +66,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [volume, setIsFullscreen]);
+  }, [volume, setIsFullscreen, iframeRef]);
 
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      try {
-        let data = event.data;
-        if (typeof data === 'string') {
-          data = JSON.parse(data);
-        }
-        
-        if (data && typeof data === 'object') {
-          console.log('Received message from iframe:', data.action);
-          switch (data.action) {
-            case 'playing':
-              setIsPlaying(true);
-              break;
-            case 'paused':
-              setIsPlaying(false);
-              break;
-            case 'volumeChange':
-              setVolume(data.value * 100);
-              setIsMuted(data.value === 0);
-              break;
-            case 'scriptLoaded':
-              console.log('Video controller script loaded successfully');
-              scriptInjectedRef.current = true;
-              break;
-            case 'statusUpdate':
-              if (data.playing !== undefined) setIsPlaying(data.playing);
-              if (data.volume !== undefined) setVolume(data.volume * 100);
-              if (data.muted !== undefined) setIsMuted(data.muted);
-              break;
-          }
-        }
-      } catch (error) {
-        // Ignore parsing errors from other messages
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, [setIsPlaying, setVolume, setIsMuted]);
-
-  // Improved script injection
-  const injectScript = () => {
-    if (iframeRef.current && !scriptInjectedRef.current) {
-      try {
-        console.log('Attempting to inject control script...');
-        const iframe = iframeRef.current;
-        
-        // The script we want to inject
-        const scriptContent = getVideoControllerScript();
-        
-        // Method 1: Try direct script injection
-        try {
-          if (iframe.contentWindow && iframe.contentDocument) {
-            const script = iframe.contentDocument.createElement('script');
-            script.textContent = scriptContent;
-            iframe.contentDocument.head.appendChild(script);
-            scriptInjectedRef.current = true;
-            console.log('Direct script injection successful');
-          }
-        } catch (e) {
-          console.log('Direct injection failed:', e);
-        }
-        
-        // Method 2: Try postMessage to have iframe eval script
-        if (!scriptInjectedRef.current) {
-          iframe.contentWindow?.postMessage(
-            JSON.stringify({ 
-              action: 'injectScript', 
-              script: scriptContent 
-            }),
-            '*'
-          );
-          injectionAttemptCountRef.current++;
-          console.log('Attempted postMessage script injection');
-        }
-        
-      } catch (error) {
-        console.error('Failed to inject controller script:', error);
-      }
-    }
-  };
-  
-  // Attempt script injection on load and periodically
-  useEffect(() => {
-    // On iframe load
-    const onLoad = () => {
-      console.log('Iframe loaded, injecting script...');
-      setTimeout(injectScript, 1000);
-    };
-    
-    if (iframeRef.current) {
-      iframeRef.current.addEventListener('load', onLoad);
-      
-      // Also try immediately
-      setTimeout(injectScript, 1000);
-      
-      // And periodically for reliability
-      const interval = setInterval(() => {
-        if (!scriptInjectedRef.current && injectionAttemptCountRef.current < 10) {
-          injectScript();
-        } else {
-          clearInterval(interval);
-        }
-      }, 2000);
-      
-      return () => {
-        iframeRef.current?.removeEventListener('load', onLoad);
-        clearInterval(interval);
-      };
-    }
-  }, []);
-  
-  // Force the iframe to reload if controls are not working after multiple attempts
   useEffect(() => {
     const checkControlsWorking = () => {
       if (injectionAttemptCountRef.current >= 8 && !scriptInjectedRef.current) {
@@ -190,10 +83,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
       }
     };
     
-    // Check after 15 seconds
     const timeout = setTimeout(checkControlsWorking, 15000);
     return () => clearTimeout(timeout);
-  }, []);
+  }, [injectionAttemptCountRef, scriptInjectedRef]);
 
   return (
     <div className="relative w-full video-container">
@@ -207,15 +99,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           allow="encrypted-media; autoplay; fullscreen"
           sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
         />
-        {breakingNews && (
-          <div className="absolute bottom-24 left-0 right-0 bg-red-800 text-white py-2 px-4">
-            <h2 className="text-xl font-bold">{breakingNews}</h2>
-          </div>
-        )}
+        {breakingNews && <BreakingNews text={breakingNews} />}
       </div>
-      <div 
-        className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-2 flex flex-col z-50"
-      >
+      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-2 flex flex-col z-50">
         <VideoControls
           isPlaying={isPlaying}
           volume={volume}
