@@ -8,30 +8,32 @@ export const useVideoPlayer = () => {
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const controlsTimeoutRef = useRef<number | null>(null);
 
   const togglePlay = () => {
     if (iframeRef.current?.contentWindow) {
-      sendVideoMessage(iframeRef.current.contentWindow, isPlaying ? 'pause' : 'play');
-      setIsPlaying(!isPlaying);
+      const newIsPlaying = !isPlaying;
+      sendVideoMessage(iframeRef.current.contentWindow, newIsPlaying ? 'play' : 'pause');
+      // We'll let the video element's event listeners confirm the state change
+      // rather than setting it here, for more reliable state management
     }
   };
 
   const handleVolumeChange = (value: number[]) => {
     const newVolume = value[0];
-    setVolume(newVolume);
     if (iframeRef.current?.contentWindow) {
       sendVideoMessage(iframeRef.current.contentWindow, 'setVolume', newVolume / 100);
+      // State will be updated via the volumechange event from the video
     }
-    setIsMuted(newVolume === 0);
   };
 
   const toggleMute = () => {
     const newMuted = !isMuted;
-    setIsMuted(newMuted);
     if (iframeRef.current?.contentWindow) {
-      const newVolume = newMuted ? 0 : 50;
+      const newVolume = newMuted ? 0 : (volume > 0 ? volume : 50);
       setVolume(newVolume);
-      sendVideoMessage(iframeRef.current.contentWindow, 'setVolume', newVolume / 100);
+      sendVideoMessage(iframeRef.current.contentWindow, 'setVolume', newMuted ? 0 : newVolume / 100);
+      // State will be updated via the volumechange event
     }
   };
 
@@ -41,7 +43,7 @@ export const useVideoPlayer = () => {
         .then(() => setIsFullscreen(false))
         .catch(err => console.log(`Error exiting fullscreen: ${err.message}`));
     } else {
-      const container = iframeRef.current?.parentElement;
+      const container = iframeRef.current?.closest('.video-container') || iframeRef.current?.parentElement;
       if (container) {
         container.requestFullscreen()
           .then(() => setIsFullscreen(true))
@@ -49,6 +51,13 @@ export const useVideoPlayer = () => {
       }
     }
   };
+
+  // Synchronize the volume state with the video element when the component mounts
+  useEffect(() => {
+    if (iframeRef.current?.contentWindow) {
+      sendVideoMessage(iframeRef.current.contentWindow, 'setVolume', volume / 100);
+    }
+  }, []);
 
   return {
     iframeRef,

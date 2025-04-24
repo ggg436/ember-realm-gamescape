@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useVideoPlayer } from '@/hooks/useVideoPlayer';
 import VideoControls from './VideoControls';
 import { getVideoControllerScript } from '@/utils/videoControl';
@@ -25,17 +25,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     toggleMute,
     toggleFullscreen,
   } = useVideoPlayer();
+  
+  const scriptInjectedRef = useRef(false);
 
   useEffect(() => {
     const setupPlayer = () => {
       if (iframeRef.current) {
+        // Initialize with a delay to ensure the iframe has loaded
         setTimeout(() => {
-          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ action: 'initialize' }), '*');
-          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ 
-            action: 'setVolume', 
-            value: volume / 100 
-          }), '*');
-        }, 1000);
+          try {
+            iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ 
+              action: 'initialize' 
+            }), '*');
+            
+            iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ 
+              action: 'setVolume', 
+              value: volume / 100 
+            }), '*');
+          } catch (error) {
+            console.error('Error initializing video player:', error);
+          }
+        }, 2000);
       }
     };
 
@@ -71,9 +81,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
               setVolume(data.value * 100);
               setIsMuted(data.value === 0);
               break;
+            case 'scriptLoaded':
+              console.log('Video controller script loaded successfully');
+              break;
           }
         }
       } catch (error) {
+        console.error('Error handling message:', error);
       }
     };
 
@@ -85,20 +99,43 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
 
   useEffect(() => {
     const injectControllerScript = () => {
-      if (iframeRef.current && iframeRef.current.contentWindow) {
+      if (iframeRef.current && !scriptInjectedRef.current) {
         try {
           const iframe = iframeRef.current;
-          iframe.onload = () => {
-            setTimeout(() => {
-              iframe.contentWindow?.postMessage(
-                JSON.stringify({ 
-                  action: 'injectScript', 
-                  script: getVideoControllerScript() 
-                }),
-                '*'
-              );
-            }, 1500);
+          
+          // Function to inject script
+          const injectScript = () => {
+            iframe.contentWindow?.postMessage(
+              JSON.stringify({ 
+                action: 'injectScript', 
+                script: getVideoControllerScript() 
+              }),
+              '*'
+            );
+            scriptInjectedRef.current = true;
           };
+          
+          if (iframe.contentWindow) {
+            // Try immediate injection
+            injectScript();
+            
+            // Also set it on load in case iframe reloads
+            iframe.onload = () => {
+              setTimeout(injectScript, 1500);
+            };
+            
+            // Periodically try to inject the script to ensure it gets in
+            const interval = setInterval(() => {
+              if (!scriptInjectedRef.current) {
+                injectScript();
+              } else {
+                clearInterval(interval);
+              }
+            }, 2000);
+            
+            // Clear interval after 20 seconds to avoid infinite attempts
+            setTimeout(() => clearInterval(interval), 20000);
+          }
         } catch (error) {
           console.error('Failed to inject controller script:', error);
         }
