@@ -11,6 +11,7 @@ interface VideoPlayerProps {
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const controllerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
@@ -20,9 +21,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     if (iframeRef.current) {
       try {
         if (isPlaying) {
-          iframeRef.current.contentWindow?.postMessage({ action: 'pause' }, '*');
+          iframeRef.current.contentWindow?.postMessage(JSON.stringify({ action: 'pause' }), '*');
         } else {
-          iframeRef.current.contentWindow?.postMessage({ action: 'play' }, '*');
+          iframeRef.current.contentWindow?.postMessage(JSON.stringify({ action: 'play' }), '*');
         }
         setIsPlaying(!isPlaying);
       } catch (error) {
@@ -35,7 +36,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     const newVolume = value[0];
     setVolume(newVolume);
     if (iframeRef.current) {
-      iframeRef.current.contentWindow?.postMessage({ action: 'setVolume', value: newVolume / 100 }, '*');
+      iframeRef.current.contentWindow?.postMessage(JSON.stringify({ 
+        action: 'setVolume', 
+        value: newVolume / 100 
+      }), '*');
     }
     if (newVolume === 0) {
       setIsMuted(true);
@@ -50,34 +54,77 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
       setIsMuted(newMuted);
       if (newMuted) {
         setVolume(0);
-        iframeRef.current.contentWindow?.postMessage({ action: 'setVolume', value: 0 }, '*');
+        iframeRef.current.contentWindow?.postMessage(JSON.stringify({ 
+          action: 'setVolume', 
+          value: 0 
+        }), '*');
       } else {
         setVolume(50);
-        iframeRef.current.contentWindow?.postMessage({ action: 'setVolume', value: 0.5 }, '*');
+        iframeRef.current.contentWindow?.postMessage(JSON.stringify({ 
+          action: 'setVolume', 
+          value: 0.5 
+        }), '*');
       }
     }
   };
 
   const toggleFullscreen = () => {
-    if (iframeRef.current) {
-      if (!document.fullscreenElement) {
-        iframeRef.current.requestFullscreen().catch(err => {
-          console.log(`Error attempting to enable fullscreen: ${err.message}`);
-        });
-        setIsFullscreen(true);
-      } else {
-        document.exitFullscreen();
+    if (document.fullscreenElement) {
+      document.exitFullscreen().then(() => {
         setIsFullscreen(false);
+      }).catch(err => {
+        console.log(`Error exiting fullscreen: ${err.message}`);
+      });
+    } else {
+      const container = iframeRef.current?.parentElement;
+      if (container) {
+        container.requestFullscreen().then(() => {
+          setIsFullscreen(true);
+        }).catch(err => {
+          console.log(`Error entering fullscreen: ${err.message}`);
+        });
       }
     }
   };
 
+  // Initialize the player and set up event listeners
+  useEffect(() => {
+    const setupPlayer = () => {
+      if (iframeRef.current) {
+        // Initial setup messages
+        setTimeout(() => {
+          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ action: 'initialize' }), '*');
+          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ 
+            action: 'setVolume', 
+            value: volume / 100 
+          }), '*');
+        }, 1000);
+      }
+    };
+
+    setupPlayer();
+
+    // Add event listeners for fullscreen changes
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [volume]);
+
   // Listen for messages from the iframe
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Make sure the message is from our iframe
-      if (event.source === iframeRef.current?.contentWindow) {
-        const data = event.data;
+      try {
+        // Try to parse the message if it's a string
+        let data = event.data;
+        if (typeof data === 'string') {
+          data = JSON.parse(data);
+        }
         
         if (data && typeof data === 'object') {
           switch (data.action) {
@@ -96,6 +143,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
               break;
           }
         }
+      } catch (error) {
+        // Silently ignore parsing errors
       }
     };
 
@@ -105,19 +154,80 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     };
   }, []);
 
+  // Inject controller script into iframe
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+    const injectControllerScript = () => {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        try {
+          const iframe = iframeRef.current;
+          iframe.onload = () => {
+            setTimeout(() => {
+              const script = `
+                // Listen for messages from the parent window
+                window.addEventListener('message', function(event) {
+                  try {
+                    let data = event.data;
+                    if (typeof data === 'string') {
+                      data = JSON.parse(data);
+                    }
+                    
+                    if (data && data.action) {
+                      const videos = document.querySelectorAll('video');
+                      if (videos.length > 0) {
+                        videos.forEach(function(video) {
+                          switch(data.action) {
+                            case 'play':
+                              video.play();
+                              break;
+                            case 'pause':
+                              video.pause();
+                              break;
+                            case 'setVolume':
+                              video.volume = data.value;
+                              break;
+                          }
+                        });
+                      }
+                    }
+                  } catch (e) {
+                    console.error('Error processing message:', e);
+                  }
+                });
+
+                // Send video events back to the parent
+                document.querySelectorAll('video').forEach(function(video) {
+                  video.addEventListener('play', function() {
+                    window.parent.postMessage(JSON.stringify({ action: 'playing' }), '*');
+                  });
+                  video.addEventListener('pause', function() {
+                    window.parent.postMessage(JSON.stringify({ action: 'paused' }), '*');
+                  });
+                  video.addEventListener('volumechange', function() {
+                    window.parent.postMessage(JSON.stringify({ 
+                      action: 'volumeChange', 
+                      value: video.volume 
+                    }), '*');
+                  });
+                });
+              `;
+
+              iframe.contentWindow?.postMessage(
+                JSON.stringify({ action: 'injectScript', script: script }),
+                '*'
+              );
+            }, 1500);
+          };
+        } catch (error) {
+          console.error('Failed to inject controller script:', error);
+        }
+      }
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
+    injectControllerScript();
   }, []);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full video-container">
       <div className="relative w-full aspect-video">
         <iframe 
           ref={iframeRef}
@@ -125,7 +235,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           className="w-full h-full"
           frameBorder="0"
           allowFullScreen
-          allow="encrypted-media"
+          allow="encrypted-media; autoplay; fullscreen"
           sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
         />
         {breakingNews && (
@@ -134,7 +244,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           </div>
         )}
       </div>
-      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-2 flex flex-col">
+      <div 
+        ref={controllerRef}
+        className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-2 flex flex-col z-50"
+      >
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">
             <Button
@@ -175,6 +288,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           </div>
         </div>
       </div>
+      <style jsx>{`
+        :global(.video-container:fullscreen .controls-container) {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          z-index: 9999;
+        }
+      `}</style>
     </div>
   );
 };
