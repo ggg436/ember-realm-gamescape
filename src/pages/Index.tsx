@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -119,7 +118,7 @@ const Index = () => {
             <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white drop-shadow-lg">Step Up Your Streaming Game with ESPN+</h1>
             <p className="text-lg md:text-xl mb-6 text-white/90 drop-shadow-md">Sign up now to access live sports, the full 30 for 30 library, and originals</p>
             <p className="text-xl font-bold mb-8 text-white drop-shadow-md">Only $10.99 a month</p>
-            <Button className="bg-amber-500 hover:bg-amber-600 text-black font-bold px-8 py-6 text-lg !rounded-button whitespace-nowrap cursor-pointer shadow-lg">Sign Up Now</Button>
+            <Button className="bg-amber-500 hover:bg-amber-600 text-black font-bold px-8 py-6 text-lg !rounded-button whitespace-nowrap cursor-pointer shadow-lg">WATCH IPL LIVE</Button>
             <div className="mt-8 flex flex-wrap gap-4">
               <Badge className="bg-red-600 py-1 px-3 text-white">LIVE GAMES</Badge>
               <Badge className="bg-blue-600 py-1 px-3 text-white">EXCLUSIVE CONTENT</Badge>
