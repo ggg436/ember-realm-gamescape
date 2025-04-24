@@ -19,6 +19,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     setIsPlaying,
     setVolume,
     setIsMuted,
+    setIsFullscreen,
     togglePlay,
     handleVolumeChange,
     toggleMute,
@@ -139,7 +140,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           onFullscreenToggle={toggleFullscreen}
         />
       </div>
-      <style>{`
+      <style>
+        {`
         .video-container:fullscreen .controls-container {
           position: absolute;
           bottom: 0;
@@ -147,7 +149,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           right: 0;
           z-index: 9999;
         }
-      `}</style>
+      `}
+      </style>
     </div>
   );
 };
