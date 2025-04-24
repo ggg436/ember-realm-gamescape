@@ -1,6 +1,5 @@
-
 import { useState, useRef, useEffect } from 'react';
-import { sendVideoMessage } from '@/utils/videoControl';
+import { sendVideoMessage } from '@/utils/videoMessages';
 
 export const useVideoPlayer = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -72,7 +71,6 @@ export const useVideoPlayer = () => {
     }
   };
 
-  // Synchronize the volume state with the video element when the component mounts
   useEffect(() => {
     if (iframeRef.current?.contentWindow) {
       // Wait a bit for iframe to load
@@ -82,7 +80,6 @@ export const useVideoPlayer = () => {
     }
   }, [volume]);
 
-  // Force controls periodically to maintain sync
   useEffect(() => {
     const interval = setInterval(() => {
       if (iframeRef.current?.contentWindow) {
