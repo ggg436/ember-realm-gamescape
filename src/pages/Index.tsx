@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,7 +28,6 @@ const Index = () => {
 
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-black'}`}>
-      {/* Navigation Bar */}
       <header className={`sticky top-0 z-50 ${theme === 'dark' ? 'bg-black border-b border-gray-800' : 'bg-white border-b border-gray-200'}`}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-8">
@@ -35,7 +35,8 @@ const Index = () => {
               <span className="text-red-600">ESPN</span>+
             </div>
             <nav className="hidden md:flex items-center space-x-6">
-              <a href="#" className={`text-sm font-medium ${activeTab === "featured" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("featured")}>Featured</a>
+              <Link to="/" className={`text-sm font-medium ${activeTab === "featured" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("featured")}>Featured</Link>
+              <Link to="/live-ipl" className={`text-sm font-medium ${activeTab === "live-ipl" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("live-ipl")}>LIVE IPL</Link>
               <a href="#" className={`text-sm font-medium ${activeTab === "originals" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("originals")}>Originals</a>
               <a href="#" className={`text-sm font-medium ${activeTab === "browse" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("browse")}>Browse</a>
               <a href="#" className={`text-sm font-medium ${activeTab === "schedule" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("schedule")}>Schedule & Replays</a>
