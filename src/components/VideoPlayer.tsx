@@ -227,7 +227,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           onFullscreenToggle={toggleFullscreen}
         />
       </div>
-      <style jsx>{`
+      <style>{`
         .video-container:fullscreen .controls-container {
           position: absolute;
           bottom: 0;
