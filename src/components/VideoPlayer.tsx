@@ -1,11 +1,10 @@
-
 import React, { useEffect } from 'react';
 import { useVideoPlayer } from '@/hooks/useVideoPlayer';
 import { useScriptInjection } from '@/hooks/useScriptInjection';
 import { useVideoMessageHandler } from '@/hooks/useVideoMessageHandler';
+import { sendVideoMessage } from '@/utils/videoMessages';
 import VideoControls from './VideoControls';
 import BreakingNews from './BreakingNews';
-import { sendVideoMessage } from '@/utils/videoControl';
 
 interface VideoPlayerProps {
   src: string;

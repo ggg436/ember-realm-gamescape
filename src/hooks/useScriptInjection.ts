@@ -1,6 +1,5 @@
-
 import { useEffect, useRef } from 'react';
-import { getVideoControllerScript } from '@/utils/videoControl';
+import { getVideoControllerScript } from '@/utils/videoControllerScript';
 
 export const useScriptInjection = (iframeRef: React.RefObject<HTMLIFrameElement>, scriptInjectedRef: { current: boolean }) => {
   const injectionAttemptCountRef = useRef(0);

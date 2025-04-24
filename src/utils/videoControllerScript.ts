@@ -1,17 +1,4 @@
 
-export const sendVideoMessage = (
-  contentWindow: Window | null,
-  action: string,
-  value?: number
-) => {
-  if (contentWindow) {
-    contentWindow.postMessage(
-      JSON.stringify({ action, ...(value !== undefined ? { value } : {}) }),
-      '*'
-    );
-  }
-};
-
 export const getVideoControllerScript = () => `
   (function() {
     // Find all video elements in the document and in iframes
