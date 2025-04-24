@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -87,11 +86,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     }
   };
 
-  // Initialize the player and set up event listeners
   useEffect(() => {
     const setupPlayer = () => {
       if (iframeRef.current) {
-        // Initial setup messages
         setTimeout(() => {
           iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ action: 'initialize' }), '*');
           iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ 
@@ -104,7 +101,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
 
     setupPlayer();
 
-    // Add event listeners for fullscreen changes
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
@@ -116,11 +112,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     };
   }, [volume]);
 
-  // Listen for messages from the iframe
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       try {
-        // Try to parse the message if it's a string
         let data = event.data;
         if (typeof data === 'string') {
           data = JSON.parse(data);
@@ -144,7 +138,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           }
         }
       } catch (error) {
-        // Silently ignore parsing errors
       }
     };
 
@@ -154,7 +147,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     };
   }, []);
 
-  // Inject controller script into iframe
   useEffect(() => {
     const injectControllerScript = () => {
       if (iframeRef.current && iframeRef.current.contentWindow) {
@@ -163,7 +155,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           iframe.onload = () => {
             setTimeout(() => {
               const script = `
-                // Listen for messages from the parent window
                 window.addEventListener('message', function(event) {
                   try {
                     let data = event.data;
@@ -194,7 +185,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
                   }
                 });
 
-                // Send video events back to the parent
                 document.querySelectorAll('video').forEach(function(video) {
                   video.addEventListener('play', function() {
                     window.parent.postMessage(JSON.stringify({ action: 'playing' }), '*');
@@ -288,8 +278,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           </div>
         </div>
       </div>
-      <style jsx>{`
-        :global(.video-container:fullscreen .controls-container) {
+      <style>{`
+        .video-container:fullscreen .controls-container {
           position: absolute;
           bottom: 0;
           left: 0;
