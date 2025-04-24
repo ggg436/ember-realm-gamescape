@@ -1,10 +1,11 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { sendVideoMessage } from '@/utils/videoMessages';
 
 export const useVideoPlayer = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(50);
+  const [volume, setVolume] = useState(50); // Start at 50% volume
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const scriptInjectedRef = useRef(false);
@@ -73,9 +74,14 @@ export const useVideoPlayer = () => {
 
   useEffect(() => {
     if (iframeRef.current?.contentWindow) {
-      // Wait a bit for iframe to load
+      // Initial setup: unmute and set volume
       setTimeout(() => {
-        sendVideoMessage(iframeRef.current!.contentWindow, 'setVolume', volume / 100);
+        if (iframeRef.current?.contentWindow) {
+          console.log('Initial video setup: unmuting and setting volume');
+          sendVideoMessage(iframeRef.current.contentWindow, 'unmute');
+          sendVideoMessage(iframeRef.current.contentWindow, 'setVolume', volume / 100);
+          setIsMuted(false);
+        }
       }, 1500);
     }
   }, [volume]);
@@ -89,14 +95,16 @@ export const useVideoPlayer = () => {
         } else {
           sendVideoMessage(iframeRef.current.contentWindow, 'pause');
         }
-        sendVideoMessage(iframeRef.current.contentWindow, 'setVolume', isMuted ? 0 : volume / 100);
+        // Always ensure video is unmuted in the periodic check
+        sendVideoMessage(iframeRef.current.contentWindow, 'unmute');
+        sendVideoMessage(iframeRef.current.contentWindow, 'setVolume', volume / 100);
       }
     }, 5000);
 
     return () => {
       clearInterval(interval);
     };
-  }, [isPlaying, volume, isMuted]);
+  }, [isPlaying, volume]);
 
   return {
     iframeRef,
