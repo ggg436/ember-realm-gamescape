@@ -1,18 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import VideoPlayer from '@/components/VideoPlayer';
 
 const LiveIpl = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(50);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(100);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState(0);
   const [currentChannelInfo, setCurrentChannelInfo] = useState({
     title: "इंडिया टीवी लाइव",
@@ -71,70 +64,6 @@ const LiveIpl = () => {
       live: false
     }
   ];
-
-  const newsItems = [
-    {
-      id: 1,
-      title: "प्रधानमंत्री मोदी का संबोधन: भारत की विकास यात्रा",
-      time: "02:08",
-      channel: "इंडिया टीवी लाइव"
-    },
-    {
-      id: 2,
-      title: "कोरोना के खिलाफ लड़ाई: नई वैक्सीन की घोषणा",
-      time: "05:30",
-      channel: "आज तक"
-    },
-    {
-      id: 3,
-      title: "किसान आंदोलन: सरकार का नया प्रस्ताव",
-      time: "03:45",
-      channel: "ज़ी न्यूज़"
-    }
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (isPlaying && currentTime < duration) {
-        setCurrentTime(prev => prev + 1);
-      } else if (currentTime >= duration) {
-        setCurrentTime(0);
-        setIsPlaying(false);
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [isPlaying, currentTime, duration]);
-
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
-
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const handleVolumeChange = (value: number[]) => {
-    setVolume(value[0]);
-    if (value[0] === 0) {
-      setIsMuted(true);
-    } else {
-      setIsMuted(false);
-    }
-  };
-
-  const handleTimeChange = (value: number[]) => {
-    setCurrentTime(value[0]);
-  };
 
   return (
     <div className="flex-1 bg-gray-900">
@@ -220,68 +149,10 @@ const LiveIpl = () => {
                 </Button>
               </div>
             </div>
-            <div className="relative w-full h-full">
-              <iframe 
-                src="//stream.crichd.sc/update/skys2.php" 
-                className="w-full h-[500px]"
-                frameBorder="0"
-                allowFullScreen
-                allow="encrypted-media"
-                sandbox="allow-same-origin allow-scripts allow-presentation"
-              />
-              <div className="absolute bottom-24 left-0 right-0 bg-red-800 text-white py-2 px-4">
-                <h2 className="text-xl font-bold">{currentChannelInfo.breakingNews}</h2>
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-2 flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center">
-                  <Button
-                    onClick={togglePlay}
-                    variant="ghost"
-                    size="sm"
-                    className="text-white !rounded-button whitespace-nowrap"
-                  >
-                    <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'}`}></i>
-                  </Button>
-                  <span className="text-sm mx-2">{formatTime(currentTime)} / {formatTime(duration)}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    onClick={toggleMute}
-                    variant="ghost"
-                    size="sm"
-                    className="text-white !rounded-button whitespace-nowrap"
-                  >
-                    <i className={`fas ${isMuted ? 'fa-volume-mute' : 'fa-volume-up'}`}></i>
-                  </Button>
-                  <div className="w-24">
-                    <Slider
-                      value={[isMuted ? 0 : volume]}
-                      max={100}
-                      step={1}
-                      onValueChange={handleVolumeChange}
-                      className="w-full"
-                    />
-                  </div>
-                  <Button
-                    onClick={toggleFullscreen}
-                    variant="ghost"
-                    size="sm"
-                    className="text-white !rounded-button whitespace-nowrap"
-                  >
-                    <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
-                  </Button>
-                </div>
-              </div>
-              <Slider
-                value={[currentTime]}
-                max={duration}
-                step={1}
-                onValueChange={handleTimeChange}
-                className="w-full"
-              />
-            </div>
+            <VideoPlayer 
+              src="//stream.crichd.sc/update/skys2.php"
+              breakingNews={currentChannelInfo.breakingNews}
+            />
           </div>
           <div className="bg-gray-800 p-4">
             <div className="flex items-center justify-between mb-4">
