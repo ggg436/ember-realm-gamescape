@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,7 @@ const SharedLayout = () => {
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <div className="text-2xl font-bold text-white">
-            <span className="text-red-600">ESPN</span>+
+            <span className="text-red-600">Sangam</span>
           </div>
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/" className={`text-sm font-medium ${activeTab === "featured" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("featured")}>Featured</Link>
