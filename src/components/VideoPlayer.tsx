@@ -2,7 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useVideoPlayer } from '@/hooks/useVideoPlayer';
 import VideoControls from './VideoControls';
-import { getVideoControllerScript } from '@/utils/videoControl';
+import { getVideoControllerScript, sendVideoMessage } from '@/utils/videoControl';
 
 interface VideoPlayerProps {
   src: string;
@@ -16,6 +16,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     volume,
     isMuted,
     isFullscreen,
+    scriptInjectedRef,
     setIsPlaying,
     setVolume,
     setIsMuted,
@@ -26,7 +27,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     toggleFullscreen,
   } = useVideoPlayer();
   
-  const scriptInjectedRef = useRef(false);
+  const injectionAttemptCountRef = useRef(0);
 
   useEffect(() => {
     const setupPlayer = () => {
@@ -34,14 +35,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
         // Initialize with a delay to ensure the iframe has loaded
         setTimeout(() => {
           try {
-            iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ 
-              action: 'initialize' 
-            }), '*');
-            
-            iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ 
-              action: 'setVolume', 
-              value: volume / 100 
-            }), '*');
+            console.log('Initializing video player...');
+            if (iframeRef.current?.contentWindow) {
+              sendVideoMessage(iframeRef.current.contentWindow, 'initialize');
+              sendVideoMessage(iframeRef.current.contentWindow, 'setVolume', volume / 100);
+            }
           } catch (error) {
             console.error('Error initializing video player:', error);
           }
@@ -70,6 +68,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
         }
         
         if (data && typeof data === 'object') {
+          console.log('Received message from iframe:', data.action);
           switch (data.action) {
             case 'playing':
               setIsPlaying(true);
@@ -83,11 +82,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
               break;
             case 'scriptLoaded':
               console.log('Video controller script loaded successfully');
+              scriptInjectedRef.current = true;
+              break;
+            case 'statusUpdate':
+              if (data.playing !== undefined) setIsPlaying(data.playing);
+              if (data.volume !== undefined) setVolume(data.volume * 100);
+              if (data.muted !== undefined) setIsMuted(data.muted);
               break;
           }
         }
       } catch (error) {
-        console.error('Error handling message:', error);
+        // Ignore parsing errors from other messages
       }
     };
 
@@ -97,52 +102,97 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     };
   }, [setIsPlaying, setVolume, setIsMuted]);
 
-  useEffect(() => {
-    const injectControllerScript = () => {
-      if (iframeRef.current && !scriptInjectedRef.current) {
+  // Improved script injection
+  const injectScript = () => {
+    if (iframeRef.current && !scriptInjectedRef.current) {
+      try {
+        console.log('Attempting to inject control script...');
+        const iframe = iframeRef.current;
+        
+        // The script we want to inject
+        const scriptContent = getVideoControllerScript();
+        
+        // Method 1: Try direct script injection
         try {
-          const iframe = iframeRef.current;
-          
-          // Function to inject script
-          const injectScript = () => {
-            iframe.contentWindow?.postMessage(
-              JSON.stringify({ 
-                action: 'injectScript', 
-                script: getVideoControllerScript() 
-              }),
-              '*'
-            );
+          if (iframe.contentWindow && iframe.contentDocument) {
+            const script = iframe.contentDocument.createElement('script');
+            script.textContent = scriptContent;
+            iframe.contentDocument.head.appendChild(script);
             scriptInjectedRef.current = true;
-          };
-          
-          if (iframe.contentWindow) {
-            // Try immediate injection
-            injectScript();
-            
-            // Also set it on load in case iframe reloads
-            iframe.onload = () => {
-              setTimeout(injectScript, 1500);
-            };
-            
-            // Periodically try to inject the script to ensure it gets in
-            const interval = setInterval(() => {
-              if (!scriptInjectedRef.current) {
-                injectScript();
-              } else {
-                clearInterval(interval);
-              }
-            }, 2000);
-            
-            // Clear interval after 20 seconds to avoid infinite attempts
-            setTimeout(() => clearInterval(interval), 20000);
+            console.log('Direct script injection successful');
           }
-        } catch (error) {
-          console.error('Failed to inject controller script:', error);
+        } catch (e) {
+          console.log('Direct injection failed:', e);
+        }
+        
+        // Method 2: Try postMessage to have iframe eval script
+        if (!scriptInjectedRef.current) {
+          iframe.contentWindow?.postMessage(
+            JSON.stringify({ 
+              action: 'injectScript', 
+              script: scriptContent 
+            }),
+            '*'
+          );
+          injectionAttemptCountRef.current++;
+          console.log('Attempted postMessage script injection');
+        }
+        
+      } catch (error) {
+        console.error('Failed to inject controller script:', error);
+      }
+    }
+  };
+  
+  // Attempt script injection on load and periodically
+  useEffect(() => {
+    // On iframe load
+    const onLoad = () => {
+      console.log('Iframe loaded, injecting script...');
+      setTimeout(injectScript, 1000);
+    };
+    
+    if (iframeRef.current) {
+      iframeRef.current.addEventListener('load', onLoad);
+      
+      // Also try immediately
+      setTimeout(injectScript, 1000);
+      
+      // And periodically for reliability
+      const interval = setInterval(() => {
+        if (!scriptInjectedRef.current && injectionAttemptCountRef.current < 10) {
+          injectScript();
+        } else {
+          clearInterval(interval);
+        }
+      }, 2000);
+      
+      return () => {
+        iframeRef.current?.removeEventListener('load', onLoad);
+        clearInterval(interval);
+      };
+    }
+  }, []);
+  
+  // Force the iframe to reload if controls are not working after multiple attempts
+  useEffect(() => {
+    const checkControlsWorking = () => {
+      if (injectionAttemptCountRef.current >= 8 && !scriptInjectedRef.current) {
+        console.log('Controls not working, reloading iframe...');
+        if (iframeRef.current) {
+          const currentSrc = iframeRef.current.src;
+          iframeRef.current.src = '';
+          setTimeout(() => {
+            if (iframeRef.current) iframeRef.current.src = currentSrc;
+            injectionAttemptCountRef.current = 0;
+          }, 500);
         }
       }
     };
-
-    injectControllerScript();
+    
+    // Check after 15 seconds
+    const timeout = setTimeout(checkControlsWorking, 15000);
+    return () => clearTimeout(timeout);
   }, []);
 
   return (
@@ -151,7 +201,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
         <iframe 
           ref={iframeRef}
           src={src}
-          className="w-full h-full"
+          className="w-full h-full bg-black"
           frameBorder="0"
           allowFullScreen
           allow="encrypted-media; autoplay; fullscreen"
@@ -177,8 +227,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           onFullscreenToggle={toggleFullscreen}
         />
       </div>
-      <style>
-        {`
+      <style jsx>{`
         .video-container:fullscreen .controls-container {
           position: absolute;
           bottom: 0;
@@ -186,8 +235,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           right: 0;
           z-index: 9999;
         }
-      `}
-      </style>
+      `}</style>
     </div>
   );
 };
