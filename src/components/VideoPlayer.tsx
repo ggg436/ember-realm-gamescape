@@ -17,12 +17,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
 
   const togglePlay = () => {
     if (iframeRef.current) {
-      if (isPlaying) {
-        iframeRef.current.contentWindow?.postMessage('pause', '*');
-      } else {
-        iframeRef.current.contentWindow?.postMessage('play', '*');
+      try {
+        if (isPlaying) {
+          iframeRef.current.contentWindow?.postMessage({ action: 'pause' }, '*');
+        } else {
+          iframeRef.current.contentWindow?.postMessage({ action: 'play' }, '*');
+        }
+        setIsPlaying(!isPlaying);
+      } catch (error) {
+        console.error('Error toggling play state:', error);
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -30,7 +34,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
     const newVolume = value[0];
     setVolume(newVolume);
     if (iframeRef.current) {
-      iframeRef.current.contentWindow?.postMessage({ type: 'volume', value: newVolume / 100 }, '*');
+      iframeRef.current.contentWindow?.postMessage({ action: 'setVolume', value: newVolume / 100 }, '*');
     }
     if (newVolume === 0) {
       setIsMuted(true);
@@ -45,10 +49,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
       setIsMuted(newMuted);
       if (newMuted) {
         setVolume(0);
-        iframeRef.current.contentWindow?.postMessage({ type: 'volume', value: 0 }, '*');
+        iframeRef.current.contentWindow?.postMessage({ action: 'setVolume', value: 0 }, '*');
       } else {
         setVolume(50);
-        iframeRef.current.contentWindow?.postMessage({ type: 'volume', value: 0.5 }, '*');
+        iframeRef.current.contentWindow?.postMessage({ action: 'setVolume', value: 0.5 }, '*');
       }
     }
   };
@@ -66,6 +70,30 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
       }
     }
   };
+
+  // Listen for messages from the iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Make sure the message is from our iframe
+      if (event.source === iframeRef.current?.contentWindow) {
+        const data = event.data;
+        
+        // Handle state updates based on messages from the iframe
+        if (data && typeof data === 'object') {
+          if (data.action === 'playing') {
+            setIsPlaying(true);
+          } else if (data.action === 'paused') {
+            setIsPlaying(false);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
