@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const LiveIpl = () => {
@@ -65,7 +66,7 @@ const LiveIpl = () => {
     },
     {
       id: 8,
-      name: "टाइム्स नाउ",
+      name: "टाइम्स नाउ",
       logo: "fa-solid fa-tv",
       live: false
     }
@@ -138,18 +139,18 @@ const LiveIpl = () => {
   return (
     <div className="flex-1 bg-gray-900">
       <main className="flex flex-1 overflow-hidden">
-        <aside className="w-64 bg-gray-800 border-r border-gray-700">
+        <aside className="w-80 bg-gray-800 border-r border-gray-700">
           <div className="p-4 border-b border-gray-700">
-            <h2 className="text-lg font-semibold">चैनल्स</h2>
+            <h2 className="text-lg font-semibold text-white">चैनल्स</h2>
           </div>
           <ScrollArea className="h-[calc(100vh-12rem)]">
-            <div className="p-2">
+            <div className="p-4 grid grid-cols-2 gap-4">
               {channels.map((channel, index) => (
                 <DropdownMenu key={channel.id}>
                   <DropdownMenuTrigger asChild>
                     <div
-                      className={`relative w-20 h-14 mx-auto mb-6 cursor-pointer transition-all group ${
-                        selectedChannel === index ? 'scale-110' : ''
+                      className={`relative w-full h-24 cursor-pointer transition-all ${
+                        selectedChannel === index ? 'scale-105' : ''
                       }`}
                       onClick={() => {
                         setSelectedChannel(index);
@@ -164,9 +165,12 @@ const LiveIpl = () => {
                       }}
                     >
                       <div className={`w-full h-full rounded-lg flex items-center justify-center ${
-                        selectedChannel === index ? 'bg-red-600' : 'bg-gray-700 group-hover:bg-gray-600'
+                        selectedChannel === index ? 'bg-red-600' : 'bg-gray-700'
                       }`}>
-                        <i className={`${channel.logo} text-3xl text-white`}></i>
+                        <div className="text-center">
+                          <i className={`${channel.logo} text-4xl text-white mb-2`}></i>
+                          <p className="text-white text-sm mt-2">{channel.name}</p>
+                        </div>
                       </div>
                       {channel.live && (
                         <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-sm border-2 border-gray-800"></span>
@@ -216,24 +220,29 @@ const LiveIpl = () => {
                 </Button>
               </div>
             </div>
-            <div className="h-full flex items-center justify-center">
-              <div className="relative w-full h-full">
-                <img
-                  src={currentChannelInfo.image}
-                  alt="Live News Broadcast"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-24 left-0 right-0 bg-red-800 text-white py-2 px-4">
-                  <h2 className="text-xl font-bold">{currentChannelInfo.breakingNews}</h2>
-                </div>
-                <div className="absolute right-4 bottom-28 bg-red-600 text-white p-2 rounded">
-                  <p className="text-xl font-bold">02:08</p>
-                </div>
-                <div className="absolute bottom-16 left-0 right-0 bg-gradient-to-t from-black to-transparent py-2 px-4">
-                  <h3 className="text-lg">प्रधानमंत्री ने भाषण से पहले कुछ देर का मौन रखा</h3>
-                </div>
-              </div>
-            </div>
+            <Carousel className="w-full">
+              <CarouselContent>
+                {newsItems.map((item) => (
+                  <CarouselItem key={item.id}>
+                    <div className="relative w-full h-full">
+                      <img
+                        src={currentChannelInfo.image}
+                        alt="Live News Broadcast"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute bottom-24 left-0 right-0 bg-red-800 text-white py-2 px-4">
+                        <h2 className="text-xl font-bold">{item.title}</h2>
+                      </div>
+                      <div className="absolute right-4 bottom-28 bg-red-600 text-white p-2 rounded">
+                        <p className="text-xl font-bold">{item.time}</p>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="left-4" />
+              <CarouselNext className="right-4" />
+            </Carousel>
             <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-2 flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center">
