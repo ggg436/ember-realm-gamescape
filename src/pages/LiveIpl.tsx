@@ -65,7 +65,7 @@ const LiveIpl = () => {
     },
     {
       id: 8,
-      name: "टाइम्स नाउ",
+      name: "टाइム्स नाउ",
       logo: "fa-solid fa-tv",
       live: false
     }
@@ -136,24 +136,7 @@ const LiveIpl = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-900 text-white">
-      <header className="bg-red-800 py-2 px-4 flex justify-between items-center">
-        <div className="flex items-center">
-          <div className="flex flex-col items-center">
-            <img src="https://static.readdy.ai/image/2ef470df7753028da91479fc42c9e18a/40f82af4033737d62eb10278e28847e1.png" alt="Logo" className="h-12" />
-          </div>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" className="text-white !rounded-button whitespace-nowrap">
-            <i className="fas fa-search mr-2"></i>
-            खोज
-          </Button>
-          <Button variant="ghost" className="text-white !rounded-button whitespace-nowrap">
-            <i className="fas fa-user mr-2"></i>
-            लॉगिन
-          </Button>
-        </div>
-      </header>
+    <div className="flex-1 bg-gray-900">
       <main className="flex flex-1 overflow-hidden">
         <aside className="w-64 bg-gray-800 border-r border-gray-700">
           <div className="p-4 border-b border-gray-700">
@@ -357,27 +340,6 @@ const LiveIpl = () => {
           </div>
         </div>
       </main>
-      <footer className="bg-gray-800 border-t border-gray-700 py-4 px-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">© 2025. All rights reserved.</h3>
-          </div>
-          <div className="flex space-x-4">
-            <Button variant="ghost" className="text-white !rounded-button whitespace-nowrap">
-              <i className="fab fa-facebook-f"></i>
-            </Button>
-            <Button variant="ghost" className="text-white !rounded-button whitespace-nowrap">
-              <i className="fab fa-twitter"></i>
-            </Button>
-            <Button variant="ghost" className="text-white !rounded-button whitespace-nowrap">
-              <i className="fab fa-instagram"></i>
-            </Button>
-            <Button variant="ghost" className="text-white !rounded-button whitespace-nowrap">
-              <i className="fab fa-youtube"></i>
-            </Button>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

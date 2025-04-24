@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("featured");
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const swiperModules = [Pagination, Autoplay, Navigation];
@@ -26,47 +27,12 @@ const Index = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-black'}`}>
-      <header className={`sticky top-0 z-50 ${theme === 'dark' ? 'bg-black border-b border-gray-800' : 'bg-white border-b border-gray-200'}`}>
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            <div className="text-2xl font-bold text-white">
-              <span className="text-red-600">ESPN</span>+
-            </div>
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link to="/" className={`text-sm font-medium ${activeTab === "featured" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("featured")}>Featured</Link>
-              <Link to="/live-ipl" className={`text-sm font-medium ${activeTab === "live-ipl" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("live-ipl")}>LIVE IPL</Link>
-              <a href="#" className={`text-sm font-medium ${activeTab === "originals" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("originals")}>Originals</a>
-              <a href="#" className={`text-sm font-medium ${activeTab === "browse" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("browse")}>Browse</a>
-              <a href="#" className={`text-sm font-medium ${activeTab === "schedule" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("schedule")}>Schedule & Replays</a>
-              <a href="#" className={`text-sm font-medium ${activeTab === "articles" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("articles")}>Articles</a>
-              <a href="#" className={`text-sm font-medium ${activeTab === "tools" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("tools")}>Tools</a>
-              <a href="#" className={`text-sm font-medium ${activeTab === "support" ? "text-white" : "text-gray-400 hover:text-white"} cursor-pointer`} onClick={() => setActiveTab("support")}>Support & FAQs</a>
-            </nav>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              size="icon"
-              className={`rounded-full ${theme === 'dark' ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-100 text-black hover:bg-gray-200'}`}
-              onClick={toggleTheme}
-            >
-              <i className={`fas ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
-            </Button>
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search"
-                className={`w-40 h-8 border-none text-sm rounded-full pl-8 focus:ring-1 focus:ring-red-600 ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-black'}`}
-              />
-              <i className="fas fa-search absolute left-3 top-2 text-gray-400 text-sm"></i>
-            </div>
-            <Button variant="outline" className="bg-red-600 hover:bg-red-700 text-white border-none !rounded-button whitespace-nowrap">Sign In</Button>
-          </div>
-        </div>
-      </header>
+  const goToLiveIpl = () => {
+    navigate('/live-ipl');
+  };
 
+  return (
+    <main className="flex-1">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 z-0">
@@ -119,7 +85,12 @@ const Index = () => {
             <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white drop-shadow-lg">Step Up Your Streaming Game with ESPN+</h1>
             <p className="text-lg md:text-xl mb-6 text-white/90 drop-shadow-md">Sign up now to access live sports, the full 30 for 30 library, and originals</p>
             <p className="text-xl font-bold mb-8 text-white drop-shadow-md">Only $10.99 a month</p>
-            <Button className="bg-amber-500 hover:bg-amber-600 text-black font-bold px-8 py-6 text-lg !rounded-button whitespace-nowrap cursor-pointer shadow-lg">WATCH IPL LIVE</Button>
+            <Button
+              onClick={goToLiveIpl}
+              className="bg-amber-500 hover:bg-amber-600 text-black font-bold px-8 py-6 text-lg !rounded-button whitespace-nowrap cursor-pointer shadow-lg"
+            >
+              WATCH IPL LIVE
+            </Button>
             <div className="mt-8 flex flex-wrap gap-4">
               <Badge className="bg-red-600 py-1 px-3 text-white">LIVE GAMES</Badge>
               <Badge className="bg-blue-600 py-1 px-3 text-white">EXCLUSIVE CONTENT</Badge>
@@ -172,7 +143,7 @@ const Index = () => {
                 score: "5-3"
               }
             ].map((game, index) => (
-              <div key={index} className={`relative group cursor-pointer overflow-hidden rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
+              <div key={index} className={`relative cursor-pointer overflow-hidden rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
                 <div className="relative">
                   <img src={game.image} alt={game.title} className="w-full aspect-video object-cover" />
                   <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full flex items-center">
@@ -193,8 +164,11 @@ const Index = () => {
                     <span className="font-bold">{game.score}</span>
                   </div>
                 </div>
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Button className="bg-red-600 hover:bg-red-700 !rounded-button whitespace-nowrap">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Button
+                    onClick={goToLiveIpl}
+                    className="bg-red-600 hover:bg-red-700 !rounded-button whitespace-nowrap"
+                  >
                     Watch Now
                   </Button>
                 </div>
@@ -205,12 +179,12 @@ const Index = () => {
       </section>
 
       {/* Cricket Channel Partners */}
-      <section className={`py-8 ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+      <section className="py-12 bg-black">
         <div className="container mx-auto px-4">
           <Swiper
             modules={[Autoplay]}
-            spaceBetween={20}
-            slidesPerView={7}
+            spaceBetween={30}
+            slidesPerView={6}
             autoplay={{
               delay: 2000,
               disableOnInteraction: false,
@@ -218,10 +192,10 @@ const Index = () => {
             loop={true}
             className="streaming-partners-slider"
             breakpoints={{
-              320: { slidesPerView: 3 },
-              640: { slidesPerView: 4 },
-              768: { slidesPerView: 5 },
-              1024: { slidesPerView: 7 },
+              320: { slidesPerView: 2 },
+              640: { slidesPerView: 3 },
+              768: { slidesPerView: 4 },
+              1024: { slidesPerView: 6 },
             }}
           >
             {[
@@ -271,36 +245,16 @@ const Index = () => {
               }
             ].map((partner, index) => (
               <SwiperSlide key={index}>
-                <div className="flex justify-center items-center h-32 opacity-60 hover:opacity-100 transition-opacity cursor-pointer">
-                  <img src={partner.image} alt={partner.text} className="h-24 w-24 object-contain rounded-full bg-gray-800/50 p-4" />
+                <div className="flex justify-center items-center h-40">
+                  <img
+                    src={partner.image}
+                    alt={partner.text}
+                    className="h-32 w-32 object-contain rounded-full bg-gray-800/50 p-4 opacity-100"
+                  />
                 </div>
               </SwiperSlide>
             ))}
           </Swiper>
-        </div>
-      </section>
-
-      {/* Sports Categories */}
-      <section className={`py-12 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-8">Popular Categories</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {[
-              { name: "Football", icon: "football-ball" },
-              { name: "Basketball", icon: "basketball-ball" },
-              { name: "Baseball", icon: "baseball-ball" },
-              { name: "Hockey", icon: "hockey-puck" },
-              { name: "Soccer", icon: "futbol" },
-              { name: "UFC", icon: "fist-raised" },
-            ].map((sport, index) => (
-              <div key={index} className="bg-gray-800 rounded-lg p-4 text-center hover:bg-gray-700 transition cursor-pointer">
-                <div className="w-16 h-16 mx-auto bg-red-600 rounded-full flex items-center justify-center mb-3">
-                  <i className={`fas fa-${sport.icon} text-2xl`}></i>
-                </div>
-                <h3 className="font-medium">{sport.name}</h3>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -406,7 +360,7 @@ const Index = () => {
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 };
 
