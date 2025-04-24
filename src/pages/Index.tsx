@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -391,6 +392,22 @@ const Index = () => {
             </div>
             <div className="relative overflow-hidden rounded-lg cursor-pointer group">
               <img
-                src="https://readdy.ai/api/search-image?query=exclusive%20sports%20interview%20setting%20professional%20athlete%20with%20interviewer%2C%20studio%20lighting%2C%20ESPN+%20original%20content%2C%20high%20production%20value&width=600&height=350&seq=9&orientation=landscape"
+                src="https://readdy.ai/api/search-image?query=exclusive%20sports%20interview%20setting%2C%20professional%20athlete%20with%20interviewer%2C%20studio%20lighting%2C%20ESPN+%20original%20content%2C%20high%20production%20value&width=600&height=350&seq=9&orientation=landscape"
                 alt="ESPN+ Original"
-                className="w-full h-
+                className="w-full h-80 object-cover object-top group-hover:scale-105 transition duration-300"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+              <div className="absolute bottom-0 left-0 p-6">
+                <Badge className="bg-purple-600 mb-3">ESPN+ ORIGINAL</Badge>
+                <h3 className="text-2xl font-bold mb-2">Inside the Mind of Champions</h3>
+                <p className="text-gray-300">An exclusive look at the mental preparation of elite athletes.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default Index;
