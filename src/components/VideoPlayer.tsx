@@ -2,6 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
 
 interface VideoPlayerProps {
   src: string;
@@ -78,12 +79,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
       if (event.source === iframeRef.current?.contentWindow) {
         const data = event.data;
         
-        // Handle state updates based on messages from the iframe
         if (data && typeof data === 'object') {
-          if (data.action === 'playing') {
-            setIsPlaying(true);
-          } else if (data.action === 'paused') {
-            setIsPlaying(false);
+          switch (data.action) {
+            case 'playing':
+              setIsPlaying(true);
+              break;
+            case 'paused':
+              setIsPlaying(false);
+              break;
+            case 'volumeChange':
+              setVolume(data.value * 100);
+              setIsMuted(data.value === 0);
+              break;
+            case 'fullscreenChange':
+              setIsFullscreen(data.value);
+              break;
           }
         }
       }
@@ -116,7 +126,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
           frameBorder="0"
           allowFullScreen
           allow="encrypted-media"
-          sandbox="allow-same-origin allow-scripts allow-presentation"
+          sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
         />
         {breakingNews && (
           <div className="absolute bottom-24 left-0 right-0 bg-red-800 text-white py-2 px-4">
@@ -131,9 +141,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
               onClick={togglePlay}
               variant="ghost"
               size="sm"
-              className="text-white !rounded-button whitespace-nowrap"
+              className="text-white hover:text-red-500 transition-colors"
             >
-              <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'}`}></i>
+              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
             </Button>
           </div>
           <div className="flex items-center space-x-2">
@@ -141,9 +151,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
               onClick={toggleMute}
               variant="ghost"
               size="sm"
-              className="text-white !rounded-button whitespace-nowrap"
+              className="text-white hover:text-red-500 transition-colors"
             >
-              <i className={`fas ${isMuted ? 'fa-volume-mute' : 'fa-volume-up'}`}></i>
+              {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
             </Button>
             <div className="w-24">
               <Slider
@@ -158,9 +168,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, breakingNews }) => {
               onClick={toggleFullscreen}
               variant="ghost"
               size="sm"
-              className="text-white !rounded-button whitespace-nowrap"
+              className="text-white hover:text-red-500 transition-colors"
             >
-              <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
+              {isFullscreen ? <Minimize className="h-6 w-6" /> : <Maximize className="h-6 w-6" />}
             </Button>
           </div>
         </div>
